@@ -33,7 +33,7 @@
 
 Name:       plexus-compiler
 Version:    1.5.2
-Release:    %mkrel 2.2.1
+Release:    %mkrel 2.2.2
 Epoch:      0
 Summary:    Compiler call initiators for Plexus
 License:    MIT
@@ -59,8 +59,6 @@ Patch0:     plexus-compiler-1.5.2-JikesCompiler.patch
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %if %{gcj_support}
-Requires(post): java-gcj-compat
-Requires(postun): java-gcj-compat
 BuildRequires:  java-gcj-compat-devel
 %else
 BuildArch:      noarch
