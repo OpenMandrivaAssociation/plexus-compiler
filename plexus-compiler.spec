@@ -56,7 +56,6 @@ Source10:   plexus-compiler-1.5.2-test-build.xml
 
 Patch0:     plexus-compiler-1.5.2-JikesCompiler.patch
 
-BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %if %{gcj_support}
 BuildRequires:  java-gcj-compat-devel
