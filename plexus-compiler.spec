@@ -34,7 +34,7 @@
 
 Name:       plexus-compiler
 Version:    1.8
-Release:    2
+Release:    4
 Summary:    Compiler call initiators for Plexus
 License:    MIT
 Group:      Development/Java
