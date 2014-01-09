@@ -1,3 +1,4 @@
+%{?_javapackages_macros:%_javapackages_macros}
 # Copyright (c) 2000-2005, JPackage Project
 # All rights reserved.
 #
@@ -29,35 +30,34 @@
 #
 
 %global parent  plexus
-%global dirhash a7f8290
-%global githash 7ca7d76
 
 Name:       plexus-compiler
-Version:    1.8
-Release:    4
+Version:    2.2
+Release:    5.1%{?dist}
+Epoch:      0
 Summary:    Compiler call initiators for Plexus
-License:    MIT
-Group:      Development/Java
+# extras subpackage has a bit different licensing
+# parts of compiler-api are ASL2.0/MIT
+License:    MIT and ASL 2.0
 URL:        http://plexus.codehaus.org/
 
-# wget  https://nodeload.github.com/sonatype/plexus-components/tarball/plexus-compiler-1.8
-Source0:    sonatype-plexus-components-%{name}-%{version}-0-g%{githash}.tar.gz
-
-Patch0:     0001-Remove-aspecj-support.patch
+Source0:    https://github.com/sonatype/%{name}/archive/%{name}-%{version}.tar.gz
+Source1:    http://www.apache.org/licenses/LICENSE-2.0.txt
+Source2:    LICENSE.MIT
 
 BuildArch:      noarch
-BuildRequires:  maven
+BuildRequires:  maven-local
 BuildRequires:  jpackage-utils
 BuildRequires:  junit
 BuildRequires:  classworlds
+BuildRequires:  plexus-compiler-extras
 BuildRequires:  eclipse-ecj
-BuildRequires:  plexus-container-default
+BuildRequires:  plexus-containers-container-default
 BuildRequires:  plexus-utils
 BuildRequires:  plexus-containers-component-metadata
+BuildRequires:  junit4
+BuildRequires:  plexus-pom
 
-Requires:       classworlds
-Requires:       plexus-container-default
-Requires:       plexus-utils
 
 %description
 Plexus Compiler adds support for using various compilers from a
@@ -66,99 +66,142 @@ additional compilers see %{name}-extras package.
 
 %package extras
 Summary:        Extra compiler support for %{name}
-Group:          Development/Java
-Requires:       jpackage-utils
-Requires:       eclipse-ecj
-Requires:       %{name} = %{version}-%{release}
+# ASL 2.0: src/main/java/org/codehaus/plexus/compiler/util/scan/
+#          ...codehaus/plexus/compiler/csharp/CSharpCompiler.java
+# ASL 1.1/MIT: ...codehaus/plexus/compiler/jikes/JikesCompiler.java
+License:        MIT and ASL 2.0 and ASL 1.1
 
 %description extras
 Additional support for csharp, eclipse and jikes compilers
 
+%package pom
+Summary:        Maven POM files for %{name}
+
+%description pom
+This package provides %{summary}.
+
 %package javadoc
 Summary:        Javadoc for %{name}
-Group:          Development/Java
-Requires:       jpackage-utils
+License:        MIT and ASL 2.0 and ASL 1.1
 
 %description javadoc
 API documentation for %{name}.
 
 %prep
-%setup -q -n sonatype-plexus-components-%{dirhash}
-%patch0 -p1
+%setup -q -n %{name}-%{name}-%{version}
+
+cp %{SOURCE1} LICENSE
+cp %{SOURCE2} LICENSE.MIT
+
+%pom_disable_module plexus-compiler-aspectj plexus-compilers/pom.xml
+
+# don't build/install compiler-test module, it needs maven2 test harness
+%pom_disable_module plexus-compiler-test
 
 %build
-export MAVEN_REPO_LOCAL=$(pwd)/.m2/repository
-mkdir -p $MAVEN_REPO_LOCAL
-mvn-jpp -e \
-        -Dmaven.repo.local=$MAVEN_REPO_LOCAL \
-        -Dmaven.test.skip=true \
-        install javadoc:aggregate
-
+%mvn_package ":plexus-compiler{,s}" pom
+%mvn_package ":*{csharp,eclipse,jikes}*" extras
+# Tests are skipped because of unavailable plexus-compiler-test artifact
+%mvn_build -f
 
 %install
-# jars
-install -d -m 755 %{buildroot}%{_javadir}/%{parent}
-install -d -m 755 %{buildroot}%{_mavenpomdir}
+%mvn_install
 
-for mod in plexus-compiler-{api,test,manager}; do
-    jarname=${mod/plexus-}
-    install -pm 644 $mod/target/${mod}-%{version}.jar \
-                    %{buildroot}%{_javadir}/%{parent}/$jarname.jar
+%files -f .mfiles
+%doc LICENSE LICENSE.MIT
+%files extras -f .mfiles-extras
+%files pom -f .mfiles-pom
 
-    install -pm 644 $mod/pom.xml %{buildroot}%{_mavenpomdir}/JPP.%{parent}-$jarname.pom
-    %add_to_maven_depmap org.codehaus.plexus $mod %{version} JPP/%{parent} $jarname
-done
+%files javadoc -f .mfiles-javadoc
+%doc LICENSE LICENSE.MIT
 
-pushd plexus-compilers
-for mod in plexus-compiler-{csharp,eclipse,jikes,javac}; do
-    jarname=${mod/plexus-}
-    install -pm 644 $mod/target/${mod}-%{version}.jar \
-                    %{buildroot}%{_javadir}/%{parent}/$jarname.jar
+%changelog
+* Sun Aug 04 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:2.2-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 
-    install -pm 644 $mod/pom.xml %{buildroot}%{_mavenpomdir}/JPP.%{parent}-$jarname.pom
-    %add_to_maven_depmap org.codehaus.plexus $mod %{version} JPP/%{parent} $jarname
-done
+* Mon Apr 15 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:2.2-4
+- Fix license tag
+- Install MIT license file
 
-install -pm 644 pom.xml %{buildroot}%{_mavenpomdir}/JPP.%{parent}-compilers.pom
-%add_to_maven_depmap org.codehaus.plexus plexus-compilers %{version} JPP/%{parent} compilers
-popd
+* Wed Apr 10 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:2.2-3
+- Remove auxiliary aliases
 
-install -pm 644 pom.xml %{buildroot}%{_mavenpomdir}/JPP.%{parent}-compiler.pom
-%add_to_maven_depmap org.codehaus.plexus plexus-compiler %{version} JPP/%{parent} compiler
+* Wed Apr 10 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:2.2-2
+- Add auxiliary aliases
 
+* Tue Mar 05 2013 Michal Srb <msrb@redhat.com> - 0:2.2-1
+- Update to upstream version 2.2
+- Add license file (Resolves: #903268)
 
-# javadocs
-install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}/%{name}
-cp -pr target/site/apidocs/* $RPM_BUILD_ROOT%{_javadocdir}/%{name}
+* Tue Mar 05 2013 Michal Srb <msrb@redhat.com> - 0:2.1-3
+- Remove auxiliary aliases
 
-%pre javadoc
-# workaround for rpm bug, can be removed in F-17
-[ $1 -gt 1 ] && [ -L %{_javadocdir}/%{name} ] && \
-rm -rf $(readlink -f %{_javadocdir}/%{name}) %{_javadocdir}/%{name} || :
+* Tue Mar 05 2013 Michal Srb <msrb@redhat.com> - 0:2.1-2
+- Build with original POM files
 
-%post
-%update_maven_depmap
+* Wed Jan 23 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:2.1-1
+- Update to upstream version 2.1
+- Build with xmvn
 
-%postun
-%update_maven_depmap
+* Wed Dec 5 2012 Michal Srb <msrb@redhat.com> - 0:1.9.2-3
+- Replaced dependency to plexus-container-default with plexus-containers-container-default
 
+* Tue Nov 13 2012 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.9.2-2
+- Fix up licensing properly
 
-%files
-%defattr(-,root,root,-)
-%{_javadir}/%{parent}/compiler-api.jar
-%{_javadir}/%{parent}/compiler-manager.jar
-%{_javadir}/%{parent}/compiler-test.jar
-%{_javadir}/%{parent}/compiler-javac.jar
-%{_mavenpomdir}/*.pom
-%{_mavendepmapfragdir}/%{name}
+* Mon Oct 29 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:1.9.2-1
+- Update to upstream version 1.9.2
 
-%files extras
-%defattr(-,root,root,-)
-%{_javadir}/%{parent}/compiler-csharp.jar
-%{_javadir}/%{parent}/compiler-eclipse.jar
-%{_javadir}/%{parent}/compiler-jikes.jar
+* Wed Aug  8 2012 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.9.1-3
+- Fix FTBFS by adding ignoreOptionalProblems function
+- Use new pom_ macros instead of patches
 
-%files javadoc
-%defattr(-,root,root,-)
-%doc %{_javadocdir}/%{name}
+* Sat Jul 21 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:1.9.1-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
 
+* Tue Jun 19 2012 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.9.1-1
+- Update to upstream 1.9.1 release
+
+* Fri Jan 13 2012 Alexander Kurtakov <akurtako@redhat.com> 0:1.8.3-1
+- Update to upstream 1.8.3 release.
+- For some reason junit is strong (not test) dependency.
+
+* Thu Dec  1 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.8-3
+- Build with maven 3
+- Don't install compiler-test module (nothing should use it anyway)
+- Fixes accoding to current guidelines
+- Install depmaps into extras separately
+
+* Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:1.8-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
+* Thu Jan 20 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.8-1
+- Update to latest version (1.8)
+- Create extras subpackage with optional compilers
+- Provide maven depmaps
+- Versionless jars & javadocs
+
+* Sun Jul 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:1.5.2-4.3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
+
+* Thu Feb 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:1.5.2-3.3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
+
+* Wed Jul  9 2008 Tom "spot" Callaway <tcallawa@redhat.com> - 0:1.5.2-2.3
+- drop repotag
+
+* Thu Mar 15 2007 Deepak Bhole <dbhole@redhat.com> - 0:1.5.2-2jpp.2
+- Fix bug in spec that prevented unversioned symlink creation
+
+* Thu Mar 08 2007 Deepak Bhole <dbhole@redhat.com> - 0:1.5.2-2jpp.1
+- Fix license
+- Disable aspectj compiler until we can put that into Fedora
+- Remove vendor and distribution tags
+- Removed javadoc post and postuns, with dirs being marked %%doc now
+- Fix buildroot per Fedora spec
+
+* Fri Jun 02 2006 Ralph Apel <r.apel at r-apel.de> - 0:1.5.2-2jpp
+- Fix jar naming to previous plexus conventions
+
+* Tue May 30 2006 Ralph Apel <r.apel at r-apel.de> - 0:1.5.2-1jpp
+- First JPackage build
