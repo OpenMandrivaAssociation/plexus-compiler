@@ -32,10 +32,11 @@
 %global parent  plexus
 
 Name:       plexus-compiler
-Version:    2.2
-Release:    5.1%{?dist}
+Version:    2.4
+Release:    1.1
 Epoch:      0
 Summary:    Compiler call initiators for Plexus
+Group:	    Development/Java
 # extras subpackage has a bit different licensing
 # parts of compiler-api are ASL2.0/MIT
 License:    MIT and ASL 2.0
@@ -47,16 +48,16 @@ Source2:    LICENSE.MIT
 
 BuildArch:      noarch
 BuildRequires:  maven-local
-BuildRequires:  jpackage-utils
-BuildRequires:  junit
-BuildRequires:  classworlds
-BuildRequires:  plexus-compiler-extras
-BuildRequires:  eclipse-ecj
-BuildRequires:  plexus-containers-container-default
-BuildRequires:  plexus-utils
-BuildRequires:  plexus-containers-component-metadata
-BuildRequires:  junit4
-BuildRequires:  plexus-pom
+BuildRequires:  mvn(junit:junit)
+BuildRequires:  mvn(org.apache.maven.plugins:maven-gpg-plugin)
+BuildRequires:  mvn(org.codehaus.plexus:plexus-compiler:pom:)
+BuildRequires:  mvn(org.codehaus.plexus:plexus-compiler-api)
+BuildRequires:  mvn(org.codehaus.plexus:plexus-compilers:pom:)
+BuildRequires:  mvn(org.codehaus.plexus:plexus-component-metadata)
+BuildRequires:  mvn(org.codehaus.plexus:plexus-components:pom:)
+BuildRequires:  mvn(org.codehaus.plexus:plexus-container-default)
+BuildRequires:  mvn(org.codehaus.plexus:plexus-utils)
+BuildRequires:  mvn(org.eclipse.tycho:org.eclipse.jdt.core)
 
 
 %description
@@ -94,6 +95,8 @@ cp %{SOURCE1} LICENSE
 cp %{SOURCE2} LICENSE.MIT
 
 %pom_disable_module plexus-compiler-aspectj plexus-compilers/pom.xml
+# missing com.google.errorprone:error_prone_core
+%pom_disable_module plexus-compiler-javac-errorprone plexus-compilers
 
 # don't build/install compiler-test module, it needs maven2 test harness
 %pom_disable_module plexus-compiler-test

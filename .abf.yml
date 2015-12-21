@@ -1,2 +1,4 @@
-sources:
+removed_sources:
   plexus-compiler-2.2.tar.gz: e5e380e0a12220d14486b7c0b2f2811e62f414b6
+sources:
+  plexus-compiler-2.4.tar.gz: bfeb19489c94d78e794b259b9c3c27210508f39e
