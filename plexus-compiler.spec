@@ -33,7 +33,7 @@
 
 Name:       plexus-compiler
 Version:    2.4
-Release:    1.1
+Release:    1.2
 Epoch:      0
 Summary:    Compiler call initiators for Plexus
 Group:	    Development/Java
