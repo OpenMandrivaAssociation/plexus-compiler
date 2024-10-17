@@ -40,7 +40,7 @@ Group:	    Development/Java
 # extras subpackage has a bit different licensing
 # parts of compiler-api are ASL2.0/MIT
 License:    MIT and ASL 2.0
-URL:        http://plexus.codehaus.org/
+URL:        https://plexus.codehaus.org/
 
 Source0:    https://github.com/sonatype/%{name}/archive/%{name}-%{version}.tar.gz
 Source1:    http://www.apache.org/licenses/LICENSE-2.0.txt
