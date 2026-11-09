@@ -55,11 +55,15 @@ def add(parent, name, text):
     node.text = text
     return node
 
-def dep(deps, group, artifact, version):
+def dep(deps, group, artifact, version, optional=False):
     node = ET.SubElement(deps, tag("dependency"))
     add(node, "groupId", group)
     add(node, "artifactId", artifact)
     add(node, "version", version)
+    # The API jar is built in this reactor. An optional dependency is
+    # hidden from builddep. %build -p removes the marker before Maven runs.
+    if optional:
+        add(node, "optional", "true")
 
 def write(path, artifact, parent_rel, modules, deps, title):
     root = ET.Element(tag("project"))
@@ -101,16 +105,47 @@ write("plexus-compiler-api/pom.xml", "plexus-compiler-api", "../pom.xml", None, 
     ("org.eclipse.sisu", "org.eclipse.sisu.plexus", "0.9.0.M3"),
 ), "Plexus Compiler Api")
 write("plexus-compiler-manager/pom.xml", "plexus-compiler-manager", "../pom.xml", None, (
-    ("org.codehaus.plexus", "plexus-compiler-api", "%{version}"),
+    ("org.codehaus.plexus", "plexus-compiler-api", "%{version}", True),
     ("javax.inject", "javax.inject", "1"),
     ("org.slf4j", "slf4j-api", "1.7.36"),
 ), "Plexus Compiler Manager")
 write("plexus-compilers/plexus-compiler-javac/pom.xml", "plexus-compiler-javac", "../../pom.xml", None, (
-    ("org.codehaus.plexus", "plexus-compiler-api", "%{version}"),
+    ("org.codehaus.plexus", "plexus-compiler-api", "%{version}", True),
     ("org.codehaus.plexus", "plexus-utils", "3.6.2"),
     ("javax.inject", "javax.inject", "1"),
     ("org.slf4j", "slf4j-api", "1.7.36"),
 ), "Plexus Compiler Javac")
+PY
+
+%build -p
+python - <<'PY'
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+def local(name):
+    return name.rsplit("}", 1)[-1]
+
+removed = 0
+for path in (
+    Path("plexus-compiler-manager/pom.xml"),
+    Path("plexus-compilers/plexus-compiler-javac/pom.xml"),
+):
+    ET.register_namespace("", "http://maven.apache.org/POM/4.0.0")
+    tree = ET.parse(path)
+    for parent in list(tree.getroot().iter()):
+        artifact = ""
+        optional = None
+        for child in list(parent):
+            if local(child.tag) == "artifactId":
+                artifact = (child.text or "").strip()
+            if local(child.tag) == "optional":
+                optional = child
+        if artifact == "plexus-compiler-api" and optional is not None:
+            parent.remove(optional)
+            removed += 1
+    tree.write(path, encoding="utf-8", xml_declaration=True)
+if removed != 2:
+    raise SystemExit("expected two reactor API markers")
 PY
 # Sisu loads @Named classes from this index. The indexer plugin is not packaged.
 python - <<'PY'
