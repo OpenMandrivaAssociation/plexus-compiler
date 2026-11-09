@@ -1,210 +1,144 @@
-%{?_javapackages_macros:%_javapackages_macros}
-# Copyright (c) 2000-2005, JPackage Project
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the
-#    distribution.
-# 3. Neither the name of the JPackage Project nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
+Name:		plexus-compiler
+Version:	2.18.0
+Release:	1
+Summary:	Uniform API for invoking Java compilers
+Group:		Development/Java
+License:	MIT AND Apache-2.0
+URL:		https://github.com/codehaus-plexus/plexus-compiler
+Source0:	https://github.com/codehaus-plexus/plexus-compiler/archive/refs/tags/plexus-compiler-%{version}.tar.gz#/plexus-compiler-%{version}.tar.gz
+Source1:	LICENSE-2.0.txt
+Source2:	LICENSE.MIT
+BuildArch:	noarch
+BuildRequires:	python
+BuildRequires:	maven
+BuildRequires:	maven-components >= 3.10.0
+BuildRequires:	java-current-devel
+BuildRequires:	mvn(org.codehaus.plexus:plexus-utils)
+BuildRequires:	plexus-utils >= 3.6.2
+Requires:	plexus-utils >= 3.6.2
+BuildRequires:	mvn(org.slf4j:slf4j-api)
+BuildRequires:	mvn(javax.inject:javax.inject)
+# javax.inject and jakarta-inject both provide this coordinate.
+BuildRequires:	javax.inject >= 1-2
+Requires:	javax.inject >= 1-2
+BuildRequires:	mvn(org.eclipse.sisu:org.eclipse.sisu.plexus)
+BuildSystem:	maven
 
-%global parent  plexus
-
-Name:       plexus-compiler
-Version:    2.4
-Release:    1.2
-Epoch:      0
-Summary:    Compiler call initiators for Plexus
-Group:	    Development/Java
-# extras subpackage has a bit different licensing
-# parts of compiler-api are ASL2.0/MIT
-License:    MIT and ASL 2.0
-URL:        https://plexus.codehaus.org/
-
-Source0:    https://github.com/sonatype/%{name}/archive/%{name}-%{version}.tar.gz
-Source1:    http://www.apache.org/licenses/LICENSE-2.0.txt
-Source2:    LICENSE.MIT
-
-BuildArch:      noarch
-BuildRequires:  maven-local
-BuildRequires:  mvn(junit:junit)
-BuildRequires:  mvn(org.apache.maven.plugins:maven-gpg-plugin)
-BuildRequires:  mvn(org.codehaus.plexus:plexus-compiler:pom:)
-BuildRequires:  mvn(org.codehaus.plexus:plexus-compiler-api)
-BuildRequires:  mvn(org.codehaus.plexus:plexus-compilers:pom:)
-BuildRequires:  mvn(org.codehaus.plexus:plexus-component-metadata)
-BuildRequires:  mvn(org.codehaus.plexus:plexus-components:pom:)
-BuildRequires:  mvn(org.codehaus.plexus:plexus-container-default)
-BuildRequires:  mvn(org.codehaus.plexus:plexus-utils)
-BuildRequires:  mvn(org.eclipse.tycho:org.eclipse.jdt.core)
-
+Obsoletes:	plexus-compiler-extras < %{EVRD}
+Obsoletes:	plexus-compiler-pom < %{EVRD}
+Provides:	plexus-compiler-pom = %{EVRD}
+Obsoletes:	plexus-compiler-javadoc < %{EVRD}
 
 %description
-Plexus Compiler adds support for using various compilers from a
-unified api. Support for javac is available in main package. For
-additional compilers see %{name}-extras package.
-
-%package extras
-Summary:        Extra compiler support for %{name}
-# ASL 2.0: src/main/java/org/codehaus/plexus/compiler/util/scan/
-#          ...codehaus/plexus/compiler/csharp/CSharpCompiler.java
-# ASL 1.1/MIT: ...codehaus/plexus/compiler/jikes/JikesCompiler.java
-License:        MIT and ASL 2.0 and ASL 1.1
-
-%description extras
-Additional support for csharp, eclipse and jikes compilers
-
-%package pom
-Summary:        Maven POM files for %{name}
-
-%description pom
-This package provides %{summary}.
-
-%package javadoc
-Summary:        Javadoc for %{name}
-License:        MIT and ASL 2.0 and ASL 1.1
-
-%description javadoc
-API documentation for %{name}.
+Invokes javac through one API. 2.18 accepts a 1.8 release version and
+passes 8 to javac --release. The package ships the API, the manager,
+and the javac compiler. Eclipse, AspectJ, Error Prone, and C# are not
+built. Tests need JUnit Jupiter, so they are not run.
 
 %prep
-%setup -q -n %{name}-%{name}-%{version}
+%autosetup -n plexus-compiler-plexus-compiler-%{version}
+rm -rf .github src plexus-compiler-test plexus-compiler-its
+rm -rf plexus-compilers/plexus-compiler-aspectj plexus-compilers/plexus-compiler-csharp plexus-compilers/plexus-compiler-eclipse plexus-compilers/plexus-compiler-javac-errorprone plexus-compilers/pom.xml
+rm -rf plexus-compiler-api/src/test plexus-compiler-manager/src/test plexus-compilers/plexus-compiler-javac/src/test
+cp -p %{SOURCE1} LICENSE-2.0.txt
+cp -p %{SOURCE2} LICENSE.MIT
+python - <<'PY'
+import xml.etree.ElementTree as ET
+NS = "http://maven.apache.org/POM/4.0.0"
+ET.register_namespace("", NS)
 
-cp %{SOURCE1} LICENSE
-cp %{SOURCE2} LICENSE.MIT
+def tag(name):
+    return "{" + NS + "}" + name
 
-%pom_disable_module plexus-compiler-aspectj plexus-compilers/pom.xml
-# missing com.google.errorprone:error_prone_core
-%pom_disable_module plexus-compiler-javac-errorprone plexus-compilers
+def add(parent, name, text):
+    node = ET.SubElement(parent, tag(name))
+    node.text = text
+    return node
 
-# don't build/install compiler-test module, it needs maven2 test harness
-%pom_disable_module plexus-compiler-test
+def dep(deps, group, artifact, version):
+    node = ET.SubElement(deps, tag("dependency"))
+    add(node, "groupId", group)
+    add(node, "artifactId", artifact)
+    add(node, "version", version)
 
-%build
-%mvn_package ":plexus-compiler{,s}" pom
-%mvn_package ":*{csharp,eclipse,jikes}*" extras
-# Tests are skipped because of unavailable plexus-compiler-test artifact
-%mvn_build -f
+def write(path, artifact, parent_rel, modules, deps, title):
+    root = ET.Element(tag("project"))
+    add(root, "modelVersion", "4.0.0")
+    if parent_rel:
+        parent = ET.SubElement(root, tag("parent"))
+        add(parent, "groupId", "org.codehaus.plexus")
+        add(parent, "artifactId", "plexus-compiler")
+        add(parent, "version", "%{version}")
+        add(parent, "relativePath", parent_rel)
+    else:
+        add(root, "groupId", "org.codehaus.plexus")
+        add(root, "version", "%{version}")
+        add(root, "packaging", "pom")
+    add(root, "artifactId", artifact)
+    add(root, "name", title)
+    if not parent_rel:
+        props = ET.SubElement(root, tag("properties"))
+        add(props, "maven.compiler.release", "8")
+        add(props, "project.build.sourceEncoding", "UTF-8")
+    if modules:
+        box = ET.SubElement(root, tag("modules"))
+        for name in modules:
+            add(box, "module", name)
+    if deps:
+        box = ET.SubElement(root, tag("dependencies"))
+        for item in deps:
+            dep(box, *item)
+    ET.ElementTree(root).write(path, encoding="utf-8", xml_declaration=True)
 
-%install
-%mvn_install
+write("pom.xml", "plexus-compiler", None, (
+    "plexus-compiler-api",
+    "plexus-compiler-manager",
+    "plexus-compilers/plexus-compiler-javac",
+), None, "Plexus Compiler")
+write("plexus-compiler-api/pom.xml", "plexus-compiler-api", "../pom.xml", None, (
+    ("org.codehaus.plexus", "plexus-utils", "3.6.2"),
+    ("org.slf4j", "slf4j-api", "1.7.36"),
+    ("org.eclipse.sisu", "org.eclipse.sisu.plexus", "0.9.0.M3"),
+), "Plexus Compiler Api")
+write("plexus-compiler-manager/pom.xml", "plexus-compiler-manager", "../pom.xml", None, (
+    ("org.codehaus.plexus", "plexus-compiler-api", "%{version}"),
+    ("javax.inject", "javax.inject", "1"),
+    ("org.slf4j", "slf4j-api", "1.7.36"),
+), "Plexus Compiler Manager")
+write("plexus-compilers/plexus-compiler-javac/pom.xml", "plexus-compiler-javac", "../../pom.xml", None, (
+    ("org.codehaus.plexus", "plexus-compiler-api", "%{version}"),
+    ("org.codehaus.plexus", "plexus-utils", "3.6.2"),
+    ("javax.inject", "javax.inject", "1"),
+    ("org.slf4j", "slf4j-api", "1.7.36"),
+), "Plexus Compiler Javac")
+PY
+# Sisu loads @Named classes from this index. The indexer plugin is not packaged.
+python - <<'PY'
+import re
+from pathlib import Path
+modules = (
+    "plexus-compiler-manager",
+    "plexus-compilers/plexus-compiler-javac",
+)
+for module in modules:
+    root = Path(module) / "src" / "main" / "java"
+    names = []
+    for path in sorted(root.rglob("*.java")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+        text = re.sub(r"//.*?$", "", text, flags=re.M)
+        match = re.search(r"\b(?:class|interface|enum)\s+([A-Za-z0-9_]+)", text)
+        if not match or "@Named" not in text[:match.start()]:
+            continue
+        pkg = re.search(r"(?m)^package\s+([A-Za-z0-9_.]+)\s*;", text)
+        if pkg:
+            names.append(pkg.group(1) + "." + match.group(1))
+    if not names:
+        continue
+    dest = Path(module) / "src" / "main" / "resources" / "META-INF" / "sisu"
+    dest.mkdir(parents=True, exist_ok=True)
+    (dest / "javax.inject.Named").write_text("\n".join(names) + "\n", encoding="utf-8")
+PY
 
 %files -f .mfiles
-%doc LICENSE LICENSE.MIT
-%files extras -f .mfiles-extras
-%files pom -f .mfiles-pom
-
-%files javadoc -f .mfiles-javadoc
-%doc LICENSE LICENSE.MIT
-
-%changelog
-* Sun Aug 04 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:2.2-5
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
-
-* Mon Apr 15 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:2.2-4
-- Fix license tag
-- Install MIT license file
-
-* Wed Apr 10 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:2.2-3
-- Remove auxiliary aliases
-
-* Wed Apr 10 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:2.2-2
-- Add auxiliary aliases
-
-* Tue Mar 05 2013 Michal Srb <msrb@redhat.com> - 0:2.2-1
-- Update to upstream version 2.2
-- Add license file (Resolves: #903268)
-
-* Tue Mar 05 2013 Michal Srb <msrb@redhat.com> - 0:2.1-3
-- Remove auxiliary aliases
-
-* Tue Mar 05 2013 Michal Srb <msrb@redhat.com> - 0:2.1-2
-- Build with original POM files
-
-* Wed Jan 23 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:2.1-1
-- Update to upstream version 2.1
-- Build with xmvn
-
-* Wed Dec 5 2012 Michal Srb <msrb@redhat.com> - 0:1.9.2-3
-- Replaced dependency to plexus-container-default with plexus-containers-container-default
-
-* Tue Nov 13 2012 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.9.2-2
-- Fix up licensing properly
-
-* Mon Oct 29 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 0:1.9.2-1
-- Update to upstream version 1.9.2
-
-* Wed Aug  8 2012 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.9.1-3
-- Fix FTBFS by adding ignoreOptionalProblems function
-- Use new pom_ macros instead of patches
-
-* Sat Jul 21 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:1.9.1-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
-
-* Tue Jun 19 2012 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.9.1-1
-- Update to upstream 1.9.1 release
-
-* Fri Jan 13 2012 Alexander Kurtakov <akurtako@redhat.com> 0:1.8.3-1
-- Update to upstream 1.8.3 release.
-- For some reason junit is strong (not test) dependency.
-
-* Thu Dec  1 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.8-3
-- Build with maven 3
-- Don't install compiler-test module (nothing should use it anyway)
-- Fixes accoding to current guidelines
-- Install depmaps into extras separately
-
-* Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:1.8-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
-
-* Thu Jan 20 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 0:1.8-1
-- Update to latest version (1.8)
-- Create extras subpackage with optional compilers
-- Provide maven depmaps
-- Versionless jars & javadocs
-
-* Sun Jul 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:1.5.2-4.3
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
-
-* Thu Feb 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0:1.5.2-3.3
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
-
-* Wed Jul  9 2008 Tom "spot" Callaway <tcallawa@redhat.com> - 0:1.5.2-2.3
-- drop repotag
-
-* Thu Mar 15 2007 Deepak Bhole <dbhole@redhat.com> - 0:1.5.2-2jpp.2
-- Fix bug in spec that prevented unversioned symlink creation
-
-* Thu Mar 08 2007 Deepak Bhole <dbhole@redhat.com> - 0:1.5.2-2jpp.1
-- Fix license
-- Disable aspectj compiler until we can put that into Fedora
-- Remove vendor and distribution tags
-- Removed javadoc post and postuns, with dirs being marked %%doc now
-- Fix buildroot per Fedora spec
-
-* Fri Jun 02 2006 Ralph Apel <r.apel at r-apel.de> - 0:1.5.2-2jpp
-- Fix jar naming to previous plexus conventions
-
-* Tue May 30 2006 Ralph Apel <r.apel at r-apel.de> - 0:1.5.2-1jpp
-- First JPackage build
+%doc LICENSE-2.0.txt LICENSE.MIT README.md
